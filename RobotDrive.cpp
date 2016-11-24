@@ -15,8 +15,6 @@ int rightEncoderPin = 19;
 long left = 0;
 long right = 0;
 
-TimedAction checkThread;
-
 //Encoder counter functions
 void leftEncoder(){
 
@@ -44,12 +42,16 @@ void resetRight(){
 
 //End encoder functions
 
-void RobotDrive::setup(TimedAction ct){
+RobotDrive::RobotDrive(TimedAction ct){
+  checkThread = ct;
+}
+
+void RobotDrive::setup(){
 
   attachInterrupt(digitalPinToInterrupt(leftEncoderPin), leftEncoder, CHANGE);
   attachInterrupt(digitalPinToInterrupt(rightEncoderPin), rightEncoder, CHANGE);
 
-  checkThread = ct;
+  AFMS.begin();
   
 }
 
@@ -180,6 +182,7 @@ void RobotDrive::driveDistance(int centimeters, int left, int right, boolean bra
   rightSpeed(right);
   
   while(avg < ((centimeters / 21) * 40)){        //40 encoder ticks is about 21 cm
+
     checkThread.check();
     avg = (left + right) / 2;
     

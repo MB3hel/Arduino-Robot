@@ -9,6 +9,10 @@ int echoPin = 23;
 NewPing sonar(triggerPin, echoPin, 150);
 Servo servo;
 
+RobotUltrasonic::RobotUltrasonic(TimedAction ct){
+  checkThread = ct;
+}
+
 void RobotUltrasonic::setup(){
 
   servo.attach(9);
