@@ -83,31 +83,38 @@ void checkMode(){
   startRobot();
 }
 
-TimedAction checkThread = TimedAction(500, checkMode);
+RobotWifi wifi;
+
+void checkActions(){
+  checkMode();
+}
+
+TimedAction checkThread = TimedAction(500, checkActions);
 
 RobotDrive drive = RobotDrive(checkThread);
 RobotUltrasonic ultrasonic = RobotUltrasonic(checkThread);
-RobotWifi wifi;
+
 
 void setup() {
 
   pinMode(programModePin, INPUT_PULLUP);
   pinMode(chargeModePin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
-
+  wifi.setup();
   startRobot();
-  //wifi.setup();
+  checkMode();
 }
 
 void loop() {
   checkThread.check();
-  //Do stuff based off wifi messages
+  String message = wifi.getMessage();
+  delayRobot(1000);
 }
 
 void delayRobot(long time){
   long startTime = millis();
   while(millis() - startTime <= time){
-    //checkThread.check();
+    checkThread.check();
   }
 }
 
