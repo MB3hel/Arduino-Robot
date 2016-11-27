@@ -8,11 +8,18 @@ int programModePin = 31;
 int chargeModePin = 33;
 int ledPin = 13;
 
+RobotWifi wifi;
+
 void checkMode(){
 
   boolean chargeMode = (digitalRead(chargeModePin) == HIGH);
   boolean programMode = (digitalRead(programModePin) == LOW);
 
+  if(!wifi.checkWifi()){
+    stopRobot();
+    wifi.waitForWifi();
+  }
+  
   while(programMode || chargeMode){
     while(programMode && chargeMode){ //4 times
   
@@ -34,7 +41,11 @@ void checkMode(){
       delay(250);
       digitalWrite(ledPin, LOW);
       delay(1000);
-  
+
+      if(!wifi.checkWifi()){
+        wifi.waitForWifi();
+      }
+       
       chargeMode = (digitalRead(chargeModePin) == HIGH);
       programMode = (digitalRead(programModePin) == LOW);
       
@@ -56,6 +67,10 @@ void checkMode(){
       delay(250);
       digitalWrite(ledPin, LOW);
       delay(1000);
+
+      if(!wifi.checkWifi()){
+        wifi.waitForWifi();
+      }
   
       chargeMode = (digitalRead(chargeModePin) == HIGH);
       programMode = (digitalRead(programModePin) == LOW);
@@ -74,7 +89,11 @@ void checkMode(){
       delay(250);
       digitalWrite(ledPin, LOW);
       delay(1000);
-  
+
+      if(!wifi.checkWifi()){
+        wifi.waitForWifi();
+      }
+      
       chargeMode = (digitalRead(chargeModePin) == HIGH);
       programMode = (digitalRead(programModePin) == LOW);
       
@@ -82,8 +101,6 @@ void checkMode(){
   }
   startRobot();
 }
-
-RobotWifi wifi;
 
 void checkActions(){
   checkMode();
@@ -101,14 +118,15 @@ void setup() {
   pinMode(chargeModePin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
   wifi.setup();
-  startRobot();
+  drive.setup();
+  ultrasonic.setup();
   checkMode();
+  autonomous();
 }
 
 void loop() {
   checkThread.check();
   String message = wifi.getMessage();
-  delayRobot(1000);
 }
 
 void delayRobot(long time){
@@ -126,5 +144,10 @@ void stopRobot(){
 void startRobot(){
   drive.setup();
   ultrasonic.setup();
+  autonomous();
+}
+
+void autonomous(){
+  drive.driveSpeed(255);
 }
 

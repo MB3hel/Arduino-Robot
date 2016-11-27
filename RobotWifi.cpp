@@ -44,6 +44,9 @@ boolean RobotWifi::setSoftAPIP(String ip){
 }
 
 void RobotWifi::setup(){
+
+  fatal = false;
+  errors = 0;
   
   if(!espWifi->setOprToSoftAP()){
 
@@ -95,24 +98,29 @@ void RobotWifi::setup(){
   if(!espWifi->setTCPServerTimeout(10))
     errors++;
 
-  int ledPin = 13;
-  
-  while(fatal){
-
-    digitalWrite(ledPin, HIGH);
-    delay(1000);
-    digitalWrite(ledPin, LOW);
-    delay(1000);
-
-    if(espWifi->kick()){
-      setup();
-    }
-    
-  };
+  if(fatal){
+    waitForWifi();
+  }
   
 }
 
-void checkConnection(){
-  
+//Is wifi connected correctly
+boolean RobotWifi::checkWifi(){
+  return espWifi->kick();
+}
+
+void RobotWifi::waitForWifi(){
+  while(1){
+    int ledPin = 13;
+    digitalWrite(ledPin, HIGH);
+    delay(1000);
+    digitalWrite(ledPin, LOW);
+    //delay(1000);
+    //Wait for AT response is enough delay
+    if(espWifi->kick()){
+      setup();
+      break;
+    }
+  }
 }
 
