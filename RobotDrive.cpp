@@ -1,19 +1,121 @@
-#include <Adafruit_MotorShield.h>
-#include <Wire.h>
-#include "utility/Adafruit_MS_PWMServoDriver.h"
 #include "RobotDrive.h"
 #include "Arduino.h"
-
-Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
-Adafruit_DCMotor *Motor_Left_Front = AFMS.getMotor(4);
-Adafruit_DCMotor *Motor_Right_Front = AFMS.getMotor(3);
-Adafruit_DCMotor *Motor_Left_Rear = AFMS.getMotor(1);
-Adafruit_DCMotor *Motor_Right_Rear = AFMS.getMotor(2);
 
 int leftEncoderPin = 18;
 int rightEncoderPin = 19;
 long left = 0;
 long right = 0;
+
+boolean RobotDrive::initSensors(){
+  if(!accel.begin()){
+    return false;
+  }
+  if(!mag.begin()){
+    return false;
+  }
+  if(!gyro.begin()){
+    return false;
+  }
+  return true;
+}
+
+byte RobotDrive::gyroRead8(byte reg){
+  byte value;
+
+  Wire.beginTransmission((byte)L3GD20_ADDRESS);
+  #if ARDUINO >= 100
+    Wire.write((uint8_t)reg);
+  #else
+    Wire.send(reg);
+  #endif
+  Wire.endTransmission();
+  Wire.requestFrom((byte)L3GD20_ADDRESS, (byte)1);
+  while (!Wire.available()); // Wait for data to arrive.
+  #if ARDUINO >= 100
+    value = Wire.read();
+  #else
+    value = Wire.receive();
+  #endif  
+  Wire.endTransmission();
+
+  return value;
+}
+byte RobotDrive::magRead8(byte address, byte reg){
+  byte value;
+
+  Wire.beginTransmission(address);
+  #if ARDUINO >= 100
+    Wire.write((uint8_t)reg);
+  #else
+    Wire.send(reg);
+  #endif
+  Wire.endTransmission();
+  Wire.requestFrom(address, (byte)1);
+  #if ARDUINO >= 100
+    value = Wire.read();
+  #else
+    value = Wire.receive();
+  #endif  
+  Wire.endTransmission();
+
+  return value;
+}
+byte RobotDrive::accelRead8(byte address, byte reg){
+  byte value;
+
+  Wire.beginTransmission(address);
+  #if ARDUINO >= 100
+    Wire.write((uint8_t)reg);
+  #else
+    Wire.send(reg);
+  #endif
+  Wire.endTransmission();
+  Wire.requestFrom(address, (byte)1);
+  #if ARDUINO >= 100
+    value = Wire.read();
+  #else
+    value = Wire.receive();
+  #endif  
+  Wire.endTransmission();
+
+  return value;
+}
+
+boolean RobotDrive::checkSensors(){
+  //Check for Accel
+  uint8_t reg1_a = accelRead8(LSM303_ADDRESS_ACCEL, LSM303_REGISTER_ACCEL_CTRL_REG1_A);
+  if (reg1_a != 0x57){
+    return false;
+  }
+  //Check mag
+  uint8_t reg1_m = magRead8(LSM303_ADDRESS_MAG, LSM303_REGISTER_MAG_CRA_REG_M);
+  if (reg1_m != 0x10){
+    return false;
+  }
+  uint8_t id = gyroRead8(GYRO_REGISTER_WHO_AM_I);
+  //Serial.println(id, HEX);
+  if ((id != L3GD20_ID) && (id != L3GD20H_ID)){
+    return false;
+  }
+  return true;
+}
+
+void RobotDrive::waitForIMU(){
+  int ledPin = 13;
+  while(1){
+    digitalWrite(ledPin, HIGH);
+    delay(250);
+    digitalWrite(ledPin, LOW);
+    delay(250);
+    digitalWrite(ledPin, HIGH);
+    delay(1000);
+    digitalWrite(ledPin, LOW);
+    delay(1000);
+    if(initSensors()){
+      break;
+    }
+  }
+}
 
 //Encoder counter functions
 void leftEncoder(){
@@ -42,17 +144,19 @@ void resetRight(){
 
 //End encoder functions
 
-RobotDrive::RobotDrive(TimedAction ct){
-  checkThread = ct;
-}
+void RobotDrive::setup(TimedAction ct){
 
-void RobotDrive::setup(){
+  checkThread = ct;
 
   attachInterrupt(digitalPinToInterrupt(leftEncoderPin), leftEncoder, CHANGE);
   attachInterrupt(digitalPinToInterrupt(rightEncoderPin), rightEncoder, CHANGE);
 
   AFMS.begin();
-  
+
+  if(!initSensors()){
+    waitForIMU();
+  }
+    
 }
 
 void RobotDrive::leftSpeed(int pwmSpeed){
