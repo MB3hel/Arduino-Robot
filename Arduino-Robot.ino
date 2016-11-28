@@ -9,56 +9,17 @@ int chargeModePin = 33;
 int ledPin = 13;
 
 RobotWifi wifi;
-RobotDrive drive = RobotDrive();
-RobotUltrasonic ultrasonic = RobotUltrasonic();
+RobotDrive drive;
+RobotUltrasonic ultrasonic;
 
 void checkMode(){
 
   boolean chargeMode = (digitalRead(chargeModePin) == HIGH);
   boolean programMode = (digitalRead(programModePin) == LOW);
-
-  if(!wifi.checkWifi()){
-    stopRobot();
-    wifi.waitForWifi();
-  }
-  if(!drive.checkSensors()){
-    stopRobot();
-    drive.waitForIMU();
-  }
+  boolean imuError = !drive.checkSensors();
+  boolean wifiError = !wifi.checkWifi();
   
-  while(programMode || chargeMode){
-    while(programMode && chargeMode){ //4 times
-  
-      stopRobot();
-      
-      digitalWrite(ledPin, HIGH);
-      delay(250);
-      digitalWrite(ledPin, LOW);
-      delay(250);
-      digitalWrite(ledPin, HIGH);
-      delay(250);
-      digitalWrite(ledPin, LOW);
-      delay(250);
-      digitalWrite(ledPin, HIGH);
-      delay(250);
-      digitalWrite(ledPin, LOW);
-      delay(250);
-      digitalWrite(ledPin, HIGH);
-      delay(250);
-      digitalWrite(ledPin, LOW);
-      delay(1000);
-
-      if(!wifi.checkWifi()){
-        wifi.waitForWifi();
-      }
-      if(!drive.checkSensors()){
-        drive.waitForIMU();
-      }
-       
-      chargeMode = (digitalRead(chargeModePin) == HIGH);
-      programMode = (digitalRead(programModePin) == LOW);
-      
-    }
+  while(programMode || chargeMode || imuError || wifiError){
   
     while(programMode && !chargeMode){ //3 times
       
@@ -76,16 +37,11 @@ void checkMode(){
       delay(250);
       digitalWrite(ledPin, LOW);
       delay(1000);
-
-      if(!wifi.checkWifi()){
-        wifi.waitForWifi();
-      }
-      if(!drive.checkSensors()){
-        drive.waitForIMU();
-      }
   
       chargeMode = (digitalRead(chargeModePin) == HIGH);
       programMode = (digitalRead(programModePin) == LOW);
+      imuError = !drive.checkSensors();
+      wifiError = !wifi.checkWifi();
       
     }
   
@@ -101,17 +57,43 @@ void checkMode(){
       delay(250);
       digitalWrite(ledPin, LOW);
       delay(1000);
-
-      if(!wifi.checkWifi()){
-        wifi.waitForWifi();
-      }
-      if(!drive.checkSensors()){
-        drive.waitForIMU();
-      }
       
       chargeMode = (digitalRead(chargeModePin) == HIGH);
       programMode = (digitalRead(programModePin) == LOW);
+      imuError = !drive.checkSensors();
+      wifiError = !wifi.checkWifi();
       
+    }
+    while(imuError){
+      stopRobot();
+      digitalWrite(ledPin, HIGH);
+      delay(250);
+      digitalWrite(ledPin, LOW);
+      delay(250);
+      digitalWrite(ledPin, HIGH);
+      delay(1000);
+      digitalWrite(ledPin, LOW);
+      delay(1000);
+      chargeMode = (digitalRead(chargeModePin) == HIGH);
+      programMode = (digitalRead(programModePin) == LOW);
+      imuError = !drive.checkSensors();
+      wifiError = !wifi.checkWifi();
+    }
+    while(wifiError){
+      stopRobot();
+      int ledPin = 13;
+      digitalWrite(ledPin, HIGH);
+      delay(1000);
+      digitalWrite(ledPin, LOW);
+      delay(1000);
+      //Wait for AT response is enough delay
+      if(wifi.checkWifi()){
+        wifi.setup();
+      }
+      chargeMode = (digitalRead(chargeModePin) == HIGH);
+      programMode = (digitalRead(programModePin) == LOW);
+      imuError = !drive.checkSensors();
+      wifiError = !wifi.checkWifi();
     }
   }
   startRobot();
@@ -121,7 +103,19 @@ void checkActions(){
   checkMode();
 }
 
-TimedAction checkThread = TimedAction(500, checkActions);
+void periodicFast(){
+  
+}
+
+TimedAction checkThread = TimedAction(100, checkActions);
+TimedAction fastActions = TimedAction(10, periodicFast);
+TimedAction threads[] = {checkThread, fastActions};
+
+void periodic(){
+  for(int i = 0; i < sizeof(threads); i++){
+    threads[i].check();
+  }
+}
 
 void setup() {
 
@@ -129,10 +123,10 @@ void setup() {
   pinMode(chargeModePin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
   wifi.setup();
-  drive.setup(checkThread);
-  ultrasonic.setup(checkThread);
+  drive.setup(periodic);
+  ultrasonic.setup(periodic);
   checkMode();
-  autonomous();
+  startRobot();
 }
 
 void loop() {
@@ -152,11 +146,15 @@ void stopRobot(){
   ultrasonic.stop();
 }
 
-void startRobot(){
-  autonomous();
+void begin(){
+  ultrasonic.setViewAngle(0);
 }
 
 void autonomous(){
   drive.driveSpeed(255);
 }
 
+void startRobot(){
+  begin();
+  autonomous();
+}

@@ -97,30 +97,11 @@ void RobotWifi::setup(){
 
   if(!espWifi->setTCPServerTimeout(10))
     errors++;
-
-  if(fatal){
-    waitForWifi();
-  }
   
 }
 
 //Is wifi connected correctly
 boolean RobotWifi::checkWifi(){
   return espWifi->kick();
-}
-
-void RobotWifi::waitForWifi(){
-  while(1){
-    int ledPin = 13;
-    digitalWrite(ledPin, HIGH);
-    delay(1000);
-    digitalWrite(ledPin, LOW);
-    //delay(1000);
-    //Wait for AT response is enough delay
-    if(espWifi->kick()){
-      setup();
-      break;
-    }
-  }
 }
 

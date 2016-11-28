@@ -100,23 +100,6 @@ boolean RobotDrive::checkSensors(){
   return true;
 }
 
-void RobotDrive::waitForIMU(){
-  int ledPin = 13;
-  while(1){
-    digitalWrite(ledPin, HIGH);
-    delay(250);
-    digitalWrite(ledPin, LOW);
-    delay(250);
-    digitalWrite(ledPin, HIGH);
-    delay(1000);
-    digitalWrite(ledPin, LOW);
-    delay(1000);
-    if(initSensors()){
-      break;
-    }
-  }
-}
-
 //Encoder counter functions
 void leftEncoder(){
 
@@ -144,18 +127,16 @@ void resetRight(){
 
 //End encoder functions
 
-void RobotDrive::setup(TimedAction ct){
+void RobotDrive::setup(void(*periodicCallback)()){
 
-  checkThread = ct;
+  this->periodicCallback = periodicCallback;
 
   attachInterrupt(digitalPinToInterrupt(leftEncoderPin), leftEncoder, CHANGE);
   attachInterrupt(digitalPinToInterrupt(rightEncoderPin), rightEncoder, CHANGE);
 
   AFMS.begin();
 
-  if(!initSensors()){
-    waitForIMU();
-  }
+  initSensors();
     
 }
 
@@ -258,7 +239,7 @@ void RobotDrive::driveDistance(int centimeters, int speed, boolean brakeToStop){
   
   while(avg < ((centimeters / 21) * 40)){        //40 encoder ticks is about 21 cm
 
-    checkThread.check();
+    (*periodicCallback);
     avg = (left + right) / 2;
     
   }
@@ -287,7 +268,7 @@ void RobotDrive::driveDistance(int centimeters, int left, int right, boolean bra
   
   while(avg < ((centimeters / 21) * 40)){        //40 encoder ticks is about 21 cm
 
-    checkThread.check();
+    (*periodicCallback);
     avg = (left + right) / 2;
     
   }
@@ -303,3 +284,4 @@ void RobotDrive::driveDistance(int centimeters, int left, int right, boolean bra
   }
   
 }
+

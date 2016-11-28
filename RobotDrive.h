@@ -9,7 +9,6 @@
 #include "utility/Adafruit_MS_PWMServoDriver.h"
 
 class RobotDrive{
-    TimedAction checkThread = TimedAction(0, NULL);
     Adafruit_MotorShield AFMS = Adafruit_MotorShield(); 
     Adafruit_DCMotor *Motor_Left_Front = AFMS.getMotor(4);
     Adafruit_DCMotor *Motor_Right_Front = AFMS.getMotor(3);
@@ -20,9 +19,11 @@ class RobotDrive{
     Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(30301);
     Adafruit_LSM303_Mag_Unified mag = Adafruit_LSM303_Mag_Unified(30302);
     Adafruit_L3GD20_Unified gyro = Adafruit_L3GD20_Unified(20);
+
+    void (*periodicCallback)();
     
   public:
-    void setup(TimedAction ct);
+    void setup(void (*periodicCallback)());
     void leftSpeed(int pwmSpeed);
     void rightSpeed(int pwmSpeed);
     void driveSpeed(int left, int right);
@@ -32,7 +33,6 @@ class RobotDrive{
     void brakeDrive(int currentLeft, int currentRight);
     void driveDistance(int centimeters, int speed, boolean brakeToStop);
     void driveDistance(int centimeters, int left, int right, boolean brakeToStop);
-    void waitForIMU();
     boolean checkSensors();
   private:
     boolean initSensors();

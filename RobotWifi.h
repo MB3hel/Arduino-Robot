@@ -15,7 +15,6 @@ class RobotWifi{
     void setup();
     String getMessage();
     boolean checkWifi();
-    void waitForWifi();
     RobotWifi();
    private:
     boolean setSoftAPIP(String ip);

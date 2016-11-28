@@ -2,9 +2,9 @@
 #include <TimedAction.h>
 
 class RobotUltrasonic{
-  TimedAction checkThread = TimedAction(0, NULL);
+  void (*periodicCallback)();
   public:
-    void setup(TimedAction ct);
+    void setup(void (*periodicCallback)());
     void stop();
     void setViewAngle(int angle);
     boolean ultrasonicInRange(int maxDistance);
